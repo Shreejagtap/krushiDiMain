@@ -8,5 +8,9 @@ export default function Layout() {
       headerShown: false,
     });
   }, []);
-  return <Stack screenOptions={{ headerShown: true }} />;
+  return (
+    <Stack>
+      <Stack.Screen name="oauth-callback" options={{ headerShown: false }} />
+    </Stack>
+  );
 }

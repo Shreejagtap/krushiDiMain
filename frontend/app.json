@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "KrushiDi",
+    "slug": "KrushiDi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "frontend",
+    "scheme": "KrushiDi",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

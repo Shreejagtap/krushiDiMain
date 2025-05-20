@@ -35,6 +35,12 @@ export default function Settings() {
     setShowSave(isChanged);
   }, [data, thresholdData]);
 
+  useEffect(() => {
+    if (fetchThresholdData) {
+      fetchThresholdData();
+    }
+  }, []);
+
   const handleSave = async () => {
     try {
       const res = await fetch(
