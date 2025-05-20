@@ -1,6 +1,12 @@
-import React from "react";
-import { Slot } from "expo-router";
+import React, { useLayoutEffect } from "react";
+import { Stack, useNavigation } from "expo-router";
 
 export default function Layout() {
-  return <Slot screenOptions={{ headerShown: true }} />;
+  const navigation = useNavigation();
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, []);
+  return <Stack screenOptions={{ headerShown: true }} />;
 }

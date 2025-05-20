@@ -1,7 +1,8 @@
-import { useSignIn, useOAuth } from "@clerk/clerk-expo";
+import { useSignIn, useSSO, useAuth } from "@clerk/clerk-expo";
 import { useNavigation, useRouter } from "expo-router";
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Text,
@@ -11,21 +12,29 @@ import {
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useWarmUpBrowser } from "@/hooks/useWarmUpBrowser";
+import { makeRedirectUri } from "expo-auth-session";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = () => {
+  const { isSignedIn } = useAuth();
   const navigation = useNavigation();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isSignedIn) {
+      router.replace("/(app)/(tabs)/home");
+    }
+  }, [isSignedIn]);
+
   useWarmUpBrowser();
 
   const { signIn, setActive } = useSignIn();
-  const { startOAuthFlow: startGoogleOAuthFlow } = useOAuth({
-    strategy: "oauth_google",
-  });
+  const { startSSOFlow } = useSSO();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   useLayoutEffect(() => {
     navigation.setOptions({
       title: "Login",
@@ -39,7 +48,7 @@ const LoginScreen = () => {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-
+    setLoading(true);
     try {
       if (!signIn) throw new Error("SignIn not initialized");
 
@@ -48,34 +57,80 @@ const LoginScreen = () => {
         password,
       });
 
+      if (!completeSignIn.createdSessionId) {
+        throw new Error("Failed to create session");
+      }
+
       if (!setActive) throw new Error("SetActive not initialized");
 
       await setActive({ session: completeSignIn.createdSessionId });
-      router.push("/(app)/(tabs)/home");
+      router.replace("/(app)/(tabs)/home");
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      if (!err.message.toLowerCase().includes("cancel")) {
+        Alert.alert(
+          "Sign In Error",
+          err.message || "Could not sign in. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const onGooglePress = async () => {
+    setLoading(true);
     try {
-      if (!startGoogleOAuthFlow) throw new Error("OAuth not initialized");
+      if (!startSSOFlow) throw new Error("SSO not initialized");
 
-      const { createdSessionId, setActive } = await startGoogleOAuthFlow();
+      const redirectUrl = makeRedirectUri({
+        scheme: "frontend",
+        path: "/(auth)/oauth-callback",
+      });
 
-      if (createdSessionId && setActive) {
-        await setActive({ session: createdSessionId });
-        router.push("/(app)/(tabs)/home");
+      console.log("OAuth Redirect URL:", redirectUrl);
+
+      const result = await startSSOFlow({
+        strategy: "oauth_google",
+        redirectUrl,
+      });
+
+      // Handle cancellation - if result is null, user probably cancelled
+      if (!result) {
+        setLoading(false);
+        return;
+      }
+
+      const { createdSessionId, setActive: resultSetActive } = result;
+
+      // Only proceed if we have both a session and the ability to set it active
+      if (createdSessionId && resultSetActive) {
+        await resultSetActive({ session: createdSessionId });
+        router.replace("/(auth)/oauth-callback");
       } else {
-        throw new Error("OAuth flow failed");
+        // This is a real error case - OAuth completed but we didn't get what we need
+        Alert.alert("Error", "Failed to create session. Please try again.");
       }
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      // Don't show error for cancellation
+      if (err.message.toLowerCase().includes("cancel")) {
+        return;
+      }
+      Alert.alert(
+        "Sign In Error",
+        err.message || "Could not sign in with Google. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View className="flex-1 bg-background p-5">
+      {loading && (
+        <View className="absolute inset-0 z-50 justify-center items-center bg-black/30">
+          <ActivityIndicator size="large" color="#256203" />
+        </View>
+      )}
       {/* Email Input */}
       <TextInput
         className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800 mt-6"

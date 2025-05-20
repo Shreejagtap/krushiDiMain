@@ -3,7 +3,6 @@ import Threshold from "../models/Threshold.model.js";
 const getThreshold = async (req, res) => {
   try {
     const threshold = await Threshold.findOne({});
-    console.log(threshold);
     if (!threshold) {
       return res.status(404).json({ message: "Threshold not found" });
     }

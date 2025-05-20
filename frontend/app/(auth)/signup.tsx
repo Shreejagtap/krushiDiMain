@@ -1,7 +1,8 @@
-import { useSignUp } from "@clerk/clerk-expo";
+import { useSignUp, useSSO } from "@clerk/clerk-expo";
 import { useNavigation, useRouter } from "expo-router";
 import React, { useLayoutEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Text,
@@ -9,9 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useOAuth } from "@clerk/clerk-expo";
 import * as WebBrowser from "expo-web-browser";
 import { useWarmUpBrowser } from "@/hooks/useWarmUpBrowser";
+import { makeRedirectUri } from "expo-auth-session";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,16 +22,16 @@ const SignupScreen = () => {
   useWarmUpBrowser();
 
   const { signUp, setActive } = useSignUp();
-  const { startOAuthFlow: startGoogleOAuthFlow } = useOAuth({
-    strategy: "oauth_google",
-  });
+  const { startSSOFlow } = useSSO();
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -41,7 +42,7 @@ const SignupScreen = () => {
   }, []);
 
   const onSignUpPress = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
@@ -50,12 +51,13 @@ const SignupScreen = () => {
       Alert.alert("Error", "Passwords don't match");
       return;
     }
-
+    setLoading(true);
     try {
       if (!signUp) throw new Error("SignUp not initialized");
 
       await signUp.create({
-        firstName: name,
+        firstName,
+        lastName,
         emailAddress: email,
         password,
       });
@@ -65,6 +67,8 @@ const SignupScreen = () => {
       setVerifying(true);
     } catch (err: any) {
       Alert.alert("Error", err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,6 +78,7 @@ const SignupScreen = () => {
       return;
     }
 
+    setLoading(true);
     try {
       if (!signUp) throw new Error("SignUp not initialized");
 
@@ -81,35 +86,83 @@ const SignupScreen = () => {
         code,
       });
 
+      if (!completeSignUp.createdSessionId) {
+        Alert.alert("Error", "Failed to create session. Please try again.");
+      }
+
       if (!setActive) throw new Error("SetActive not initialized");
 
       await setActive({ session: completeSignUp.createdSessionId });
-      router.push("/(app)/(tabs)/home");
+      router.replace("/(app)/(tabs)/home");
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      if (!err.message.toLowerCase().includes("cancel")) {
+        Alert.alert(
+          "Verification Error",
+          err.message || "Failed to verify email. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const onGooglePress = async () => {
+    setLoading(true);
     try {
-      if (!startGoogleOAuthFlow) throw new Error("OAuth not initialized");
+      if (!startSSOFlow) throw new Error("SSO not initialized");
 
-      const { createdSessionId, setActive } = await startGoogleOAuthFlow();
+      const redirectUrl = makeRedirectUri({
+        scheme: "frontend",
+        path: "/(auth)/oauth-callback",
+      });
 
-      if (createdSessionId && setActive) {
-        await setActive({ session: createdSessionId });
-        router.push("/(app)/(tabs)/home");
+      console.log("OAuth Redirect URL:", redirectUrl);
+
+      const result = await startSSOFlow({
+        strategy: "oauth_google",
+        redirectUrl,
+      });
+
+      // Handle cancellation - if result is null, user probably cancelled
+      if (!result) {
+        setLoading(false);
+        return;
+      }
+
+      const { createdSessionId, setActive: resultSetActive } = result;
+
+      // Only proceed if we have both a session and the ability to set it active
+      if (createdSessionId && resultSetActive) {
+        await resultSetActive({ session: createdSessionId });
+        router.replace("/(auth)/oauth-callback");
       } else {
-        throw new Error("OAuth flow failed");
+        // This is a real error case - OAuth completed but we didn't get what we need
+
+        Alert.alert("Error", "Failed to create session. Please try again.");
       }
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      // Don't show error for cancellation
+      if (err.message.toLowerCase().includes("cancel")) {
+        return;
+      }
+
+      Alert.alert(
+        "Sign Up Error",
+        err.message || "Could not sign up with Google. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   if (verifying) {
     return (
       <View className="flex-1 bg-background p-5">
+        {loading && (
+          <View className="absolute inset-0 z-50 justify-center items-center bg-black/30">
+            <ActivityIndicator size="large" color="#256203" />
+          </View>
+        )}
         <Text className="text-xl text-center mb-6">
           Please enter the verification code sent to your email
         </Text>
@@ -134,13 +187,28 @@ const SignupScreen = () => {
 
   return (
     <View className="flex-1 bg-background p-5">
-      {/* Name Input */}
+      {loading && (
+        <View className="absolute inset-0 z-50 justify-center items-center bg-black/30">
+          <ActivityIndicator size="large" color="#256203" />
+        </View>
+      )}
+      {/* First Name Input */}
       <TextInput
         className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800 mt-6"
-        placeholder="Name"
+        placeholder="First Name"
         placeholderTextColor="#aaa"
-        value={name}
-        onChangeText={setName}
+        value={firstName}
+        onChangeText={setFirstName}
+        autoCapitalize="words"
+      />
+
+      {/* Last Name Input */}
+      <TextInput
+        className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800"
+        placeholder="Last Name"
+        placeholderTextColor="#aaa"
+        value={lastName}
+        onChangeText={setLastName}
         autoCapitalize="words"
       />
 
