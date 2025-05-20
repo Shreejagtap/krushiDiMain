@@ -1,0 +1,12 @@
+{
+  "onboarding": {
+    "title": "आइए शुरू करें! ",
+    "continue": "जारी रखें"
+  },
+  "welcome": {
+    "pageTitle": "नमस्ते!",
+    "login": "लॉगिन",
+    "or": "या",
+    "register": "साइन अप करें"
+  }
+}

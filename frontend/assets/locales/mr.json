@@ -1,0 +1,12 @@
+{
+  "onboarding": {
+    "title": "चला सुरुवात करूया!",
+    "continue": "पुढे जा"
+  },
+  "welcome": {
+    "pageTitle": "नमस्कार!",
+    "login": "लॉगिन",
+    "or": "किंवा",
+    "register": "नोंदणी करा"
+  }
+}

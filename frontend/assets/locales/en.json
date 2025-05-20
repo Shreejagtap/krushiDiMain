@@ -1,0 +1,12 @@
+{
+  "onboarding": {
+    "title": "Let's get started!",
+    "continue": "Continue"
+  },
+  "welcome": {
+    "pageTitle": "Hello!",
+    "login": "Login",
+    "or": "OR",
+    "register": "Sign Up"
+  }
+}
