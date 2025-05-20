@@ -13,6 +13,7 @@ import {
 import * as WebBrowser from "expo-web-browser";
 import { useWarmUpBrowser } from "@/hooks/useWarmUpBrowser";
 import { makeRedirectUri } from "expo-auth-session";
+import { Ionicons } from "@expo/vector-icons";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -35,6 +36,9 @@ const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: "Login",
@@ -142,17 +146,29 @@ const LoginScreen = () => {
         autoCapitalize="none"
       />
 
-      {/* Password Input */}
-      <TextInput
-        className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800"
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      {/* Password Input with Eye Button */}
+      <View className="relative">
+        <TextInput
+          className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800 pr-12"
+          placeholder="Password"
+          placeholderTextColor="#aaa"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity
+          className="absolute right-4 top-1/2 -translate-y-1/2"
+          onPress={() => setShowPassword((prev) => !prev)}
+          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? (
+            <Ionicons name="eye-off" size={24} color="#333" />
+          ) : (
+            <Ionicons name="eye" size={24} color="#333" />
+          )}
+        </TouchableOpacity>
+      </View>
 
-      {/* Forgot Password */}
       <TouchableOpacity
         onPress={() => {
           /* Implement forgot password flow */

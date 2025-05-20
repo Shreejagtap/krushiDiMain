@@ -13,6 +13,7 @@ import {
 import * as WebBrowser from "expo-web-browser";
 import { useWarmUpBrowser } from "@/hooks/useWarmUpBrowser";
 import { makeRedirectUri } from "expo-auth-session";
+import { Ionicons } from "@expo/vector-icons";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,6 +33,8 @@ const SignupScreen = () => {
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -224,24 +227,48 @@ const SignupScreen = () => {
       />
 
       {/* Password Input */}
-      <TextInput
-        className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800"
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View className="relative">
+        <TextInput
+          className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800 pr-12"
+          placeholder="Password"
+          placeholderTextColor="#aaa"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity
+          style={{ position: "absolute", right: 16, top: 22 }}
+          onPress={() => setShowPassword((prev) => !prev)}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#888"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Confirm Password Input */}
-      <TextInput
-        className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800"
-        placeholder="Confirm Password"
-        placeholderTextColor="#aaa"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
+      <View className="relative">
+        <TextInput
+          className="border border-gray-300 bg-gray-50 rounded-lg p-5 mb-3 text-lg text-gray-800 pr-12"
+          placeholder="Confirm Password"
+          placeholderTextColor="#aaa"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry={!showConfirmPassword}
+        />
+        <TouchableOpacity
+          style={{ position: "absolute", right: 16, top: 22 }}
+          onPress={() => setShowConfirmPassword((prev) => !prev)}
+        >
+          <Ionicons
+            name={showConfirmPassword ? "eye-off" : "eye"}
+            size={24}
+            color="#888"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Sign Up Button */}
       <TouchableOpacity

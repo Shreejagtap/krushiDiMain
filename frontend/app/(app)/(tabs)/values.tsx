@@ -1,5 +1,5 @@
 import { Text, ScrollView } from "react-native";
-import React, { use, useContext } from "react";
+import React, { useContext } from "react";
 import { LineChart } from "react-native-gifted-charts";
 import { GlobalContext } from "@/context/GlobalContext";
 

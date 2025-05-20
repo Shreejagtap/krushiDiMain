@@ -26,6 +26,7 @@ app.use(express.json());
 
 // Connect to MongoDB
 await connectDB();
+
 // Middleware to parse cookies
 app.use(cookieParser());
 
